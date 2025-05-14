@@ -1,0 +1,24 @@
+-- setup-database.sql
+-- Run this script to set up your MySQL database
+
+-- Create database
+CREATE DATABASE IF NOT EXISTS book_collection;
+
+-- Use the created database
+USE book_collection;
+
+-- Create books table
+CREATE TABLE IF NOT EXISTS books (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  title VARCHAR(255) NOT NULL,
+  author VARCHAR(255) NOT NULL,
+  year INT NOT NULL,
+  genre VARCHAR(100) NOT NULL
+);
+
+-- Optional: Insert some sample data
+INSERT INTO books (title, author, year, genre) VALUES
+  ('To Kill a Mockingbird', 'Harper Lee', 1960, 'Fiction'),
+  ('1984', 'George Orwell', 1949, 'Science Fiction'),
+  ('The Great Gatsby', 'F. Scott Fitzgerald', 1925, 'Fiction'),
+  ('The Hobbit', 'J.R.R. Tolkien', 1937, 'Fantasy');

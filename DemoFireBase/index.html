@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Book Collection</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        line-height: 1.6;
+      }
+      h1 {
+        color: #2c3e50;
+        text-align: center;
+      }
+      form {
+        background-color: #f9f9f9;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input,
+      textarea,
+      select {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+      button {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      button:hover {
+        background-color: #2980b9;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      .action-buttons button {
+        margin-right: 5px;
+        padding: 5px 10px;
+        font-size: 14px;
+      }
+      .edit-button {
+        background-color: #f39c12;
+      }
+      .delete-button {
+        background-color: #e74c3c;
+      }
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Book Collection</h1>
+
+    <!-- Add Book Form -->
+    <form id="book-form">
+      <h2>Add a Book</h2>
+      <input type="hidden" id="book-id" />
+      <div class="form-group">
+        <label for="title">Title:</label>
+        <input type="text" id="title" required />
+      </div>
+      <div class="form-group">
+        <label for="author">Author:</label>
+        <input type="text" id="author" required />
+      </div>
+      <div class="form-group">
+        <label for="year">Publication Year:</label>
+        <input type="number" id="year" min="1000" max="2025" required />
+      </div>
+      <div class="form-group">
+        <label for="genre">Genre:</label>
+        <select id="genre" required>
+          <option value="">Select a genre</option>
+          <option value="Fiction">Fiction</option>
+          <option value="Non-Fiction">Non-Fiction</option>
+          <option value="Science Fiction">Science Fiction</option>
+          <option value="Fantasy">Fantasy</option>
+          <option value="Mystery">Mystery</option>
+          <option value="Biography">Biography</option>
+          <option value="History">History</option>
+          <option value="Self-Help">Self-Help</option>
+        </select>
+      </div>
+      <button type="submit" id="submit-btn">Add Book</button>
+      <button type="button" id="cancel-btn" class="hidden">Cancel</button>
+    </form>
+
+    <!-- Books Table -->
+    <h2>Your Books</h2>
+    <table id="books-table">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Author</th>
+          <th>Year</th>
+          <th>Genre</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="books-list">
+        <!-- Books will be added here dynamically -->
+      </tbody>
+    </table>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js"></script>
+
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-app.js";
+      import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.7.1/firebase-analytics.js";
+      // TODO: Add SDKs for Firebase products that you want to use
+      // https://firebase.google.com/docs/web/setup#available-libraries
+
+      // Your web app's Firebase configuration
+      // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+      const firebaseConfig = {
+        apiKey: "AIzaSyAaaZQj34xr5Q-Xi9rabqw7WBaBLR6i-W8",
+        authDomain: "demose332-f6226.firebaseapp.com",
+        projectId: "demose332-f6226",
+        storageBucket: "demose332-f6226.firebasestorage.app",
+        messagingSenderId: "823551866385",
+        appId: "1:823551866385:web:2038264a6fd887e37623b0",
+        measurementId: "G-BMJF871PZ9",
+      };
+
+      //   // Initialize Firebase
+      //   const app = initializeApp(firebaseConfig);
+      //   const analytics = getAnalytics(app);
+
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+      const booksCollection = db.collection("books");
+
+      // DOM Elements
+      const bookForm = document.getElementById("book-form");
+      const booksList = document.getElementById("books-list");
+      const bookIdInput = document.getElementById("book-id");
+      const titleInput = document.getElementById("title");
+      const authorInput = document.getElementById("author");
+      const yearInput = document.getElementById("year");
+      const genreInput = document.getElementById("genre");
+      const submitBtn = document.getElementById("submit-btn");
+      const cancelBtn = document.getElementById("cancel-btn");
+
+      // Load books when page loads
+      window.addEventListener("DOMContentLoaded", loadBooks);
+
+      // Add event listeners
+      bookForm.addEventListener("submit", handleFormSubmit);
+      cancelBtn.addEventListener("click", resetForm);
+
+      // Load books from Firestore
+      function loadBooks() {
+        booksList.innerHTML = "";
+
+        booksCollection
+          .get()
+          .then((snapshot) => {
+            snapshot.forEach((doc) => {
+              const book = doc.data();
+              book.id = doc.id;
+              addBookToTable(book);
+            });
+          })
+          .catch((error) => {
+            console.error("Error loading books: ", error);
+          });
+      }
+
+      // Add a book to the table
+      function addBookToTable(book) {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+                <td>${book.title}</td>
+                <td>${book.author}</td>
+                <td>${book.year}</td>
+                <td>${book.genre}</td>
+                <td class="action-buttons">
+                    <button class="edit-button" data-id="${book.id}">Edit</button>
+                    <button class="delete-button" data-id="${book.id}">Delete</button>
+                </td>
+            `;
+
+        // Add event listeners to buttons
+        const editButton = row.querySelector(".edit-button");
+        const deleteButton = row.querySelector(".delete-button");
+
+        editButton.addEventListener("click", () => editBook(book));
+        deleteButton.addEventListener("click", () => deleteBook(book.id));
+
+        booksList.appendChild(row);
+      }
+
+      // Handle form submission
+      function handleFormSubmit(e) {
+        e.preventDefault();
+
+        const bookData = {
+          title: titleInput.value,
+          author: authorInput.value,
+          year: parseInt(yearInput.value),
+          genre: genreInput.value,
+        };
+
+        if (bookIdInput.value) {
+          // Update existing book
+          booksCollection
+            .doc(bookIdInput.value)
+            .update(bookData)
+            .then(() => {
+              console.log("Book updated successfully!");
+              resetForm();
+              loadBooks();
+            })
+            .catch((error) => {
+              console.error("Error updating book: ", error);
+            });
+        } else {
+          // Add new book
+          booksCollection
+            .add(bookData)
+            .then(() => {
+              console.log("Book added successfully!");
+              resetForm();
+              loadBooks();
+            })
+            .catch((error) => {
+              console.error("Error adding book: ", error);
+            });
+        }
+      }
+
+      // Edit a book
+      function editBook(book) {
+        bookIdInput.value = book.id;
+        titleInput.value = book.title;
+        authorInput.value = book.author;
+        yearInput.value = book.year;
+        genreInput.value = book.genre;
+
+        submitBtn.textContent = "Update Book";
+        cancelBtn.classList.remove("hidden");
+      }
+
+      // Delete a book
+      function deleteBook(id) {
+        if (confirm("Are you sure you want to delete this book?")) {
+          booksCollection
+            .doc(id)
+            .delete()
+            .then(() => {
+              console.log("Book deleted successfully!");
+              loadBooks();
+            })
+            .catch((error) => {
+              console.error("Error deleting book: ", error);
+            });
+        }
+      }
+
+      // Reset the form
+      function resetForm() {
+        bookForm.reset();
+        bookIdInput.value = "";
+        submitBtn.textContent = "Add Book";
+        cancelBtn.classList.add("hidden");
+      }
+    </script>
+  </body>
+</html>
