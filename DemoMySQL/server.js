@@ -7,18 +7,18 @@ const path = require("path");
 
 // Initialize express app
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+// app.use(express.static(path.join(__dirname, "public")));
 
 // Initialize MySQL database connection
 const db = mysql.createConnection({
   host: "localhost",
   user: "root", // Replace with your MySQL username
-  password: "", // Replace with your MySQL password
+  password: "123456", // Replace with your MySQL password
   database: "book_collection",
 });
 
